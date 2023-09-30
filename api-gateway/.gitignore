@@ -1,0 +1,28 @@
+# Binaries for programs and plugins
+.DS_Store
+*~
+
+api-gateway
+
+# Output of tools: coverage tool, editor ...
+*.swp
+*.vim
+.vim_bookmarks
+*.out
+.vscode
+output
+.idea/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Logs
+/logs
+/log
+*.log
+
+# Dependency directories
+vendor/
+
+# ignore kitex_gen
+kitex_gen/

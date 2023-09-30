@@ -1,0 +1,51 @@
+image: registry.cn-shanghai.aliyuncs.com/huaxingsec/build-tool:latest
+
+stages:
+  - prebuild
+  - build
+
+before_script:
+    - go env -w GOPRIVATE=huaxingsec.com,gitlab.huaxingsec.com
+    - git config --global url."git@gitlab.huaxingsec.com:rinas".insteadOf "https://gitlab.huaxingsec.com"
+    - date
+    - echo "Generating common & kitex(rpc)->kitex_gen"
+    - |
+      rm -rf ../common && git clone git@gitlab.huaxingsec.com:rinas/common.git ../common
+      rm -rf ../rpc && git clone git@gitlab.huaxingsec.com:rinas/rpc.git ../rpc
+    - |
+      go get github.com/cloudwego/kitex/tool/cmd/kitex@v0.0.4
+      go get github.com/cloudwego/thriftgo@v0.1.3
+      go get github.com/cloudwego/kitex/pkg/remote/trans/netpoll@v0.0.4
+      sh kitex.sh
+    - |
+      export CONTENTSVC=content-svc:8888
+      export STOCKSEARCHSVC=stock-search-svc:8888
+      export KLINESVC=test-qt-kline.hxingsec.com:30889
+      export QTSVC=test-qt-latest.hxingsec.com:30888
+      export QTRANKSVC=test-qt-kline.hxingsec.com:30887
+      export QTSTEPDEALSVC=test-qt-step-deal.hxingsec.com:30886
+    - date
+
+after_script:
+    - date
+
+linter:
+  stage: prebuild
+  script:
+    - echo "Linting code... This will take about 10 seconds."
+    - staticcheck -tags musl $(go list ./... | grep -v "kitex_gen")
+    - echo "No lint issues found."
+
+ut:
+  stage: prebuild
+  script:
+    - echo "Running unit tests... This will take some time"
+    - go test -tags musl -cover $(go list ./...)
+    - echo "Code coverage is 90%"
+
+builder:       # This job runs in the build stage, which runs first.
+  stage: build
+  script:
+    - echo "Compiling the code..."
+    - go build -tags musl -o hx.api.gateway
+    - echo "Compile complete."
